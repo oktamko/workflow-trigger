@@ -23,7 +23,9 @@ jobs:
             echo "::warning::BOT_TRIGGER_TOKEN or TARGET_REPO is not set, nothing to start"
             exit 0
           fi
-          gh workflow run bot.yml --repo "$TARGET"
+          # REST call instead of "gh workflow run": the latter also reads the repository's
+          # default branch, which needs a wider token (Contents: read) than we want to grant.
+          gh api --method POST "repos/$TARGET/actions/workflows/bot.yml/dispatches" -f ref=main
 
       - uses: actions/checkout@v4
 
