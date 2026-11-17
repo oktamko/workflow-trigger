@@ -1,0 +1,35 @@
+name: Trigger
+
+on:
+  schedule:
+    # Minutes 7, 27 and 47 on purpose: GitHub delays or drops scheduled runs at the top of the hour.
+    - cron: "7,27,47 5-21 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only for the occasional empty commit in the keepalive step below
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Start the target workflow
+        env:
+          GH_TOKEN: ${{ secrets.BOT_TRIGGER_TOKEN }}
+          TARGET: ${{ secrets.TARGET_REPO }}
+        run: gh workflow run bot.yml --repo "$TARGET"
+
+      - uses: actions/checkout@v4
+
+      - name: Keep the schedule alive
+        # GitHub disables scheduled workflows in a repository with no activity for 60 days.
+        # A workflow run does not count as activity, a commit does.
+        run: |
+          last=$(git log -1 --format=%ct)
+          if [ $(( $(date +%s) - last )) -gt 2592000 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit --allow-empty -m "keepalive: last commit is over 30 days old"
+            git push
+          fi
