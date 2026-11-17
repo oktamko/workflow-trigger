@@ -18,7 +18,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BOT_TRIGGER_TOKEN }}
           TARGET: ${{ secrets.TARGET_REPO }}
-        run: gh workflow run bot.yml --repo "$TARGET"
+        run: |
+          if [ -z "$GH_TOKEN" ] || [ -z "$TARGET" ]; then
+            echo "::warning::BOT_TRIGGER_TOKEN or TARGET_REPO is not set, nothing to start"
+            exit 0
+          fi
+          gh workflow run bot.yml --repo "$TARGET"
 
       - uses: actions/checkout@v4
 
